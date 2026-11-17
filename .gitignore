@@ -1,0 +1,37 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# --- Entornos virtuales ---
+.venv/
+venv/
+env/
+
+# --- Variables de entorno (secretos) ---
+.env
+.env.*
+!.env.example
+
+# --- Docker ---
+docker-compose.override.yml
+*.log
+
+# --- Editores / SO ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Nota: .devcontainer/ NO se ignora; es parte del proyecto.
