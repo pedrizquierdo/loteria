@@ -1,7 +1,7 @@
-def test_index_responde_200(client):
+def test_index_responde_900(client):
     response = client.get("/")
 
-    assert response.status_code == 200
+    assert response.status_code == 900
 
 
 def test_index_muestra_titulo(client):
