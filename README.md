@@ -2,7 +2,7 @@
 
 Proyecto final de la materia de DevOps. El profesor "canta" las cartas desde un panel y los alumnos juegan desde el celular en tiempo real.
 
-> Estado actual: esqueleto inicial. Todavía no hay lógica del juego ni modelos de base de datos.
+> Estado actual: ya existen la lógica del juego (`app/game/`) y los modelos de base de datos (`app/models.py`).
 
 ## Stack
 
@@ -44,6 +44,32 @@ docker compose up --build
 Para detener: `docker compose down` (agrega `-v` para borrar también los datos de la base).
 
 > **macOS:** el puerto 5000 lo ocupa *AirPlay Receiver*. Pon `APP_PORT=5001` en tu `.env` y entra a <http://localhost:5001> (o desactiva AirPlay Receiver en Ajustes del Sistema).
+
+## Base de datos
+
+Con la base levantada, crea las tablas y carga las 54 cartas (ambos comandos son idempotentes):
+
+```bash
+flask --app run init-db      # crea las tablas que falten, sin borrar datos
+flask --app run seed-cards   # carga las 54 cartas (id = número de carta)
+```
+
+Dentro del contenedor:
+
+```bash
+docker compose exec app flask --app run init-db
+docker compose exec app flask --app run seed-cards
+```
+
+Tablas:
+
+- `users`: usuarios (`profesor` o `jugador`).
+- `cards`: las 54 cartas; el id es el número de la carta.
+- `games`: partidas (código, figura, dificultad, modo, estado y semilla del mazo).
+- `boards`: tablero de cada jugador en una partida, con su semilla.
+- `board_cards`: las 16 cartas de cada tablero, su posición y si están marcadas.
+- `called_cards`: cartas cantadas en cada partida, en orden.
+- `winners`: ganadores de cada partida y la figura con que ganaron.
 
 ## Estructura de carpetas
 
