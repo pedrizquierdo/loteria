@@ -11,6 +11,12 @@ def create_app(config_class=Config):
 
     db.init_app(app)
 
+    # Importar los modelos los registra en db.metadata para db.create_all().
+    from app import models  # noqa: F401
+    from app.cli import register_cli
+
+    register_cli(app)
+
     from app.routes.health import bp as health_bp
     from app.routes.main import bp as main_bp
 
