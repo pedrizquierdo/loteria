@@ -211,10 +211,11 @@ def crear_partida():
         if campo in datos:
             opciones[campo] = _validar_opcion(datos, campo, validos[campo])
 
+    db.session.flush()  # asegura g.user.id si el usuario es nuevo
     for _ in range(10):
         code = "".join(secrets.choice(_ALFABETO_CODIGO) for _ in range(_LARGO_CODIGO))
         partida = Game(
-            code=code, host=g.user, seed=secrets.randbelow(_MAX_SEMILLA), **opciones
+            code=code, host_id=g.user.id, seed=secrets.randbelow(_MAX_SEMILLA), **opciones
         )
         try:
             with db.session.begin_nested():
@@ -303,7 +304,8 @@ def unirse(code):
         raise ApiError(409, "La partida ya terminó.")
 
     semilla = secrets.randbelow(_MAX_SEMILLA)
-    tablero = Board(game=partida, user=g.user, seed=semilla)
+    db.session.flush()  # asegura g.user.id si el usuario es nuevo
+    tablero = Board(game_id=partida.id, user_id=g.user.id, seed=semilla)
     tablero.cards = [
         BoardCard(card_id=carta, position=posicion)
         for posicion, carta in enumerate(generar_tablero(semilla))
@@ -351,7 +353,9 @@ def cantar_loteria(code):
     marcas = set(marcadas)
     for casilla in tablero.cards:
         casilla.marked = casilla.card_id in marcas
-    ganador = Winner(game=partida, user=g.user, board=tablero, figure=partida.figure)
+    ganador = Winner(
+        game_id=partida.id, user_id=g.user.id, board_id=tablero.id, figure=partida.figure
+    )
     db.session.add(ganador)
     partida.status = "terminada"
     db.session.commit()
