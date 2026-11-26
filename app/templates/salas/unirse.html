@@ -21,7 +21,12 @@
     {% endif %}
 
     {% if error %}
-      <div class="alert alert-error" role="alert">{{ error }}</div>
+      <div class="alert alert-error" role="alert">
+        {{ error }}
+        {% if requiere_login %}
+          <a href="{{ url_for('auth.login', next=url_for('salas.unirse', code=valores.code) if valores.code else url_for('salas.unirse')) }}">Iniciar sesión</a>
+        {% endif %}
+      </div>
     {% endif %}
 
     <form class="stack-form" method="post" action="{{ url_for('salas.unirse') }}">
