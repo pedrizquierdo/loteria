@@ -1,0 +1,17 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Sala no encontrada · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="mobile-wrap">
+  <article class="card not-found-card">
+    <span class="eyebrow">Sala no encontrada</span>
+    <h1>No encontramos la sala{% if codigo %} {{ codigo }}{% endif %}</h1>
+    <p class="page-subtitle">{{ error }}</p>
+    <div class="form-actions">
+      <a href="{{ url_for('salas.unirse') }}" class="btn btn-primary btn-block">Ingresar otro código</a>
+      <a href="{{ url_for('salas.crear') }}" class="btn btn-secondary btn-block">Crear una sala nueva</a>
+    </div>
+  </article>
+</section>
+{% endblock %}
