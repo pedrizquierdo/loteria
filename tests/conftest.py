@@ -66,6 +66,43 @@ def db_session(app):
             connection.close()
 
 
+TABLAS_DE_JUEGO = ("users", "games", "boards", "board_cards", "called_cards", "winners")
+
+
+@pytest.fixture
+def limpia_bd(app):
+    """Base real para pruebas que pasan por el client (las rutas hacen commit).
+
+    `db_session` no sirve aquí: la sesión de Flask-SQLAlchemy que usan las
+    rutas ignora `bind=connection`. En su lugar:
+    - antes: crea las tablas y siembra las 54 cartas con `flask seed-cards`;
+    - después: vacía las tablas de juego (TRUNCATE ... RESTART IDENTITY
+      CASCADE) y deja las cartas.
+    Requiere una base separada y desechable (TEST_DATABASE_URL).
+    """
+    from sqlalchemy import text
+
+    from app.db import db
+
+    # `seed-cards` no lleva @with_appcontext (el CLI `flask` empuja el
+    # contexto por su cuenta), así que el runner de pruebas necesita uno.
+    with app.app_context():
+        db.create_all()
+        resultado = app.test_cli_runner().invoke(args=["seed-cards"])
+        assert resultado.exit_code == 0, resultado.output
+
+    yield
+
+    with app.app_context():
+        db.session.remove()
+        db.session.execute(
+            text(f"TRUNCATE {', '.join(TABLAS_DE_JUEGO)} RESTART IDENTITY CASCADE")
+        )
+        db.session.commit()
+        db.session.remove()
+        db.engine.dispose()
+
+
 @pytest.fixture
 def client(app):
     return app.test_client()
