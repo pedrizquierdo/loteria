@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ranking · Lotería Mexicana en línea{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/ranking.css') }}">
+</head>
+<body>
+  <div class="papel-picado" aria-hidden="true"></div>
+  <header class="ranking-header">
+    <div class="ranking-container header-inner">
+      <a class="brand" href="{{ url_for('ranking.vista_ranking') }}">
+        <span class="brand-mark" aria-hidden="true">★</span>
+        <span>Lotería Mexicana · Ranking</span>
+      </a>
+      <a href="{{ url_for('ranking.api_ranking') }}" class="nav-link">API JSON</a>
+    </div>
+  </header>
+
+  <main class="ranking-container ranking-main">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="ranking-footer">
+    <div class="ranking-container">
+      <p>Lotería Mexicana en línea · Tabla histórica de ganadores</p>
+    </div>
+  </footer>
+</body>
+</html>
