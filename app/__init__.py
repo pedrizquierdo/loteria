@@ -17,10 +17,12 @@ def create_app(config_class=Config):
 
     register_cli(app)
 
+    from app.routes.game import bp as game_bp
     from app.routes.health import bp as health_bp
     from app.routes.main import bp as main_bp
 
     app.register_blueprint(health_bp)
     app.register_blueprint(main_bp)
+    app.register_blueprint(game_bp)
 
     return app
