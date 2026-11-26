@@ -117,10 +117,29 @@ def _validar_opcion(campo, valor, validos):
     return valor
 
 
-def _obtener_o_crear_usuario(nombre, rol_si_es_nuevo, exigir_rol=None):
-    """Obtiene un usuario por nombre o lo crea con el rol indicado.
+def _tiene_password_real(usuario):
+    return bool(usuario.password_hash) and not usuario.password_hash.startswith("!")
 
-    Temporal mientras no existe login real (ver `app/auth.py`).
+
+def _verificar_cuenta_protegida(usuario, usuario_autenticado):
+    """Si la cuenta ya tiene contraseña real, exige haber iniciado sesión."""
+    if _tiene_password_real(usuario) and (
+        usuario_autenticado is None or usuario_autenticado.id != usuario.id
+    ):
+        raise SalaError(
+            401,
+            "Ese nombre pertenece a una cuenta registrada con contraseña. "
+            "Inicia sesión primero para usarlo.",
+        )
+
+
+def _obtener_o_crear_usuario(
+    nombre, rol_si_es_nuevo, exigir_rol=None, usuario_autenticado=None
+):
+    """Obtiene un usuario por nombre o lo crea para acceso rápido en salón.
+
+    Si el usuario ya existe con una contraseña real (registrado vía login),
+    exige que la sesión pertenezca a ese mismo usuario.
     """
     usuario = db.session.query(User).filter_by(username=nombre).one_or_none()
     if usuario is None:
@@ -134,6 +153,8 @@ def _obtener_o_crear_usuario(nombre, rol_si_es_nuevo, exigir_rol=None):
                 db.session.add(usuario)
         except IntegrityError:
             usuario = db.session.query(User).filter_by(username=nombre).one()
+
+    _verificar_cuenta_protegida(usuario, usuario_autenticado)
 
     if exigir_rol is not None and usuario.role != exigir_rol:
         raise SalaError(
@@ -160,7 +181,13 @@ def buscar_sala(codigo, bloquear=False):
     return partida
 
 
-def crear_sala(nombre_profesor, figure="fila", difficulty="normal", mode="manual"):
+def crear_sala(
+    nombre_profesor,
+    figure="fila",
+    difficulty="normal",
+    mode="manual",
+    usuario_autenticado=None,
+):
     """Crea una nueva partida en estado de espera con código único."""
     nombre_norm = normalizar_nombre(nombre_profesor)
     figura_val = _validar_opcion("figura", figure, FIGURAS)
@@ -168,7 +195,10 @@ def crear_sala(nombre_profesor, figure="fila", difficulty="normal", mode="manual
     modo_val = _validar_opcion("modo", mode, MODOS)
 
     profesor = _obtener_o_crear_usuario(
-        nombre_norm, rol_si_es_nuevo="profesor", exigir_rol="profesor"
+        nombre_norm,
+        rol_si_es_nuevo="profesor",
+        exigir_rol="profesor",
+        usuario_autenticado=usuario_autenticado,
     )
 
     for _ in range(10):
@@ -196,11 +226,13 @@ def crear_sala(nombre_profesor, figure="fila", difficulty="normal", mode="manual
     return partida, profesor
 
 
-def unirse_a_sala(codigo, nombre_jugador):
+def unirse_a_sala(codigo, nombre_jugador, usuario_autenticado=None):
     """Une un alumno a una sala y genera su tablero de 16 cartas.
 
     Es idempotente: si el alumno ya tenía tablero en esta sala, devuelve el
-    mismo sin crear duplicados. Devuelve `(partida, tablero, jugador, creado)`.
+    mismo sin crear duplicados. Si el nombre corresponde a una cuenta registrada
+    con contraseña real, exige sesión autenticada. Devuelve
+    `(partida, tablero, jugador, creado)`.
     """
     codigo_norm = normalizar_codigo(codigo)
     nombre_norm = normalizar_nombre(nombre_jugador)
@@ -210,6 +242,7 @@ def unirse_a_sala(codigo, nombre_jugador):
 
     usuario = db.session.query(User).filter_by(username=nombre_norm).one_or_none()
     if usuario is not None:
+        _verificar_cuenta_protegida(usuario, usuario_autenticado)
         tablero_existente = (
             db.session.execute(
                 select(Board)
@@ -226,7 +259,11 @@ def unirse_a_sala(codigo, nombre_jugador):
     if partida.status == "terminada":
         raise SalaError(409, "La partida ya terminó; ya no es posible unirse.")
 
-    jugador = _obtener_o_crear_usuario(nombre_norm, rol_si_es_nuevo="jugador")
+    jugador = _obtener_o_crear_usuario(
+        nombre_norm,
+        rol_si_es_nuevo="jugador",
+        usuario_autenticado=usuario_autenticado,
+    )
     semilla = secrets.randbelow(MAX_SEMILLA)
     tablero = Board(game_id=partida.id, user_id=jugador.id, seed=semilla)
     tablero.cards = [

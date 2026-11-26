@@ -2,6 +2,7 @@
 
 from flask import Blueprint, jsonify, redirect, render_template, request, session, url_for
 
+from app.auth import SESSION_USER_ID, usuario_actual
 from app.db import db
 from app.models import DIFICULTADES_VALIDAS, FIGURAS, MODOS
 from app.salas import (
@@ -39,13 +40,32 @@ def _opciones_creacion():
     }
 
 
+def _username_en_sesion():
+    usuario = usuario_actual()
+    if usuario is not None:
+        return usuario.username
+    return session.get("username")
+
+
+def _guardar_identidad_sala(usuario, usuario_sesion):
+    """Actualiza la sesión de sala sin mezclar un `user_id` de otra cuenta."""
+    if usuario_sesion is None or usuario_sesion.id != usuario.id:
+        session.pop(SESSION_USER_ID, None)
+    session["username"] = usuario.username
+    session["role"] = usuario.role
+
+
 @bp.route("/crear", methods=["GET", "POST"])
 def crear():
     """Pantalla del profesor para crear una nueva sala con código."""
+    usuario_sesion = usuario_actual()
     if request.method == "GET":
-        username_inicial = (
-            session.get("username", "") if session.get("role") == "profesor" else ""
-        )
+        if usuario_sesion is not None and usuario_sesion.role == "profesor":
+            username_inicial = usuario_sesion.username
+        elif session.get("role") == "profesor":
+            username_inicial = session.get("username", "")
+        else:
+            username_inicial = ""
         valores = {
             "username": username_inicial,
             "figure": "fila",
@@ -56,6 +76,7 @@ def crear():
             "salas/crear.html",
             valores=valores,
             error=None,
+            requiere_login=False,
             **_opciones_creacion(),
         )
 
@@ -71,6 +92,7 @@ def crear():
             figure=valores["figure"],
             difficulty=valores["difficulty"],
             mode=valores["mode"],
+            usuario_autenticado=usuario_sesion,
         )
     except SalaError as err:
         db.session.rollback()
@@ -79,24 +101,28 @@ def crear():
                 "salas/crear.html",
                 valores=valores,
                 error=err.message,
+                requiere_login=err.status == 401,
                 **_opciones_creacion(),
             ),
             err.status,
         )
 
-    session["username"] = profesor.username
-    session["role"] = profesor.role
+    _guardar_identidad_sala(profesor, usuario_sesion)
     return redirect(url_for("salas.ver_sala", code=partida.code))
 
 
 @bp.route("/unirse", methods=["GET", "POST"])
 def unirse():
     """Pantalla mobile-first para que un alumno se una a una sala por código."""
+    usuario_sesion = usuario_actual()
     if request.method == "GET":
         codigo_inicial = "".join((request.args.get("code") or "").split()).upper()
-        nombre_inicial = (
-            session.get("username", "") if session.get("role") == "jugador" else ""
-        )
+        if usuario_sesion is not None:
+            nombre_inicial = usuario_sesion.username
+        elif session.get("role") == "jugador":
+            nombre_inicial = session.get("username", "")
+        else:
+            nombre_inicial = ""
         sala_preview = None
         aviso = None
         if codigo_inicial:
@@ -116,12 +142,15 @@ def unirse():
             valores={"code": codigo_inicial, "username": nombre_inicial},
             sala_preview=sala_preview,
             error=aviso,
+            requiere_login=False,
         )
 
     codigo_crudo = request.form.get("code") or ""
     nombre_crudo = request.form.get("username") or ""
     try:
-        partida, _tablero, jugador, _creado = unirse_a_sala(codigo_crudo, nombre_crudo)
+        partida, _tablero, jugador, _creado = unirse_a_sala(
+            codigo_crudo, nombre_crudo, usuario_autenticado=usuario_sesion
+        )
     except SalaError as err:
         db.session.rollback()
         return (
@@ -133,12 +162,12 @@ def unirse():
                 },
                 sala_preview=None,
                 error=err.message,
+                requiere_login=err.status == 401,
             ),
             err.status,
         )
 
-    session["username"] = jugador.username
-    session["role"] = jugador.role
+    _guardar_identidad_sala(jugador, usuario_sesion)
     return redirect(url_for("salas.vista_jugador", code=partida.code))
 
 
@@ -164,8 +193,8 @@ def ver_sala(code):
             err.status,
         )
 
-    usuario_actual = session.get("username")
-    if usuario_actual and usuario_actual == partida.host.username:
+    usuario_actual_nombre = _username_en_sesion()
+    if usuario_actual_nombre and usuario_actual_nombre == partida.host.username:
         enlace_unirse = url_for("salas.unirse", code=partida.code, _external=True)
         return render_template(
             "salas/profesor.html",
@@ -173,7 +202,10 @@ def ver_sala(code):
             enlace_unirse=enlace_unirse,
         )
 
-    if usuario_actual and obtener_tablero_jugador(partida, usuario_actual) is not None:
+    if (
+        usuario_actual_nombre
+        and obtener_tablero_jugador(partida, usuario_actual_nombre) is not None
+    ):
         return redirect(url_for("salas.vista_jugador", code=partida.code))
 
     return redirect(url_for("salas.unirse", code=partida.code))
@@ -194,15 +226,15 @@ def vista_jugador(code):
             err.status,
         )
 
-    usuario_actual = session.get("username")
-    tablero = obtener_tablero_jugador(partida, usuario_actual)
+    usuario_actual_nombre = _username_en_sesion()
+    tablero = obtener_tablero_jugador(partida, usuario_actual_nombre)
     if tablero is None:
         return redirect(url_for("salas.unirse", code=partida.code))
 
     return render_template(
         "salas/jugador.html",
         sala=resumen_sala(partida),
-        jugador=usuario_actual,
+        jugador=usuario_actual_nombre,
         tablero=tablero,
     )
 

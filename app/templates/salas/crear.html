@@ -14,7 +14,12 @@
 
   <div class="card">
     {% if error %}
-      <div class="alert alert-error" role="alert">{{ error }}</div>
+      <div class="alert alert-error" role="alert">
+        {{ error }}
+        {% if requiere_login %}
+          <a href="{{ url_for('auth.login', next=url_for('salas.crear')) }}">Iniciar sesión</a>
+        {% endif %}
+      </div>
     {% endif %}
 
     <form class="stack-form" method="post" action="{{ url_for('salas.crear') }}">
