@@ -21,9 +21,12 @@ from app.models import (
     Board,
     CalledCard,
     Game,
-    User,
     Winner,
 )
+
+# Nota: `_sincronizar_auto` y `_cantidad_cantadas` son funciones privadas de
+# `app/routes/game.py`. Si se renombran o refactorizan ahí, hay que actualizar
+# estas importaciones (o promoverlas a un módulo compartido).
 from app.routes.game import _cantidad_cantadas, _sincronizar_auto
 
 TOTAL_CARTAS = len(CARTAS)
@@ -79,10 +82,19 @@ def buscar_partida_panel(codigo, bloquear=False):
     return partida
 
 
-def exigir_anfitrion_por_nombre(partida, username):
-    if not username:
-        raise ApiError(401, "Debes identificarte como profesor para usar el panel.")
-    if partida.host.username != username:
+def exigir_profesor(usuario):
+    """Exige usuario autenticado por sesión real (`user_id`) con rol `profesor`."""
+    if usuario is None:
+        raise ApiError(401, "Debes iniciar sesión como profesor para usar el panel.")
+    if usuario.role != "profesor":
+        raise ApiError(403, "Solo un profesor puede usar el panel de control.")
+    return usuario
+
+
+def exigir_anfitrion(partida, usuario):
+    """Exige que el usuario autenticado sea el profesor dueño (`host_id`) de la partida."""
+    exigir_profesor(usuario)
+    if partida.host_id != usuario.id:
         raise ApiError(403, "Solo el profesor que creó la partida puede controlarla.")
 
 
@@ -159,17 +171,19 @@ def estado_panel(partida):
     }
 
 
-def sincronizar_y_obtener_estado(codigo, username):
-    """Sincroniza el reloj automático si aplica y devuelve el estado del panel."""
+def sincronizar_y_obtener_estado(codigo, usuario):
+    """Valida al profesor anfitrión, sincroniza el reloj auto y devuelve el estado."""
+    exigir_profesor(usuario)
     codigo_norm = normalizar_codigo(codigo)
     partida = _sincronizar_auto(codigo_norm)
-    exigir_anfitrion_por_nombre(partida, username)
+    exigir_anfitrion(partida, usuario)
     return estado_panel(partida)
 
 
-def iniciar_partida_panel(codigo, username):
+def iniciar_partida_panel(codigo, usuario):
+    exigir_profesor(usuario)
     partida = buscar_partida_panel(codigo, bloquear=True)
-    exigir_anfitrion_por_nombre(partida, username)
+    exigir_anfitrion(partida, usuario)
     if partida.status != "espera":
         raise ApiError(409, f"La partida ya se inició (estado: {partida.status}).")
     momento = _ahora()
@@ -180,9 +194,10 @@ def iniciar_partida_panel(codigo, username):
     return estado_panel(partida)
 
 
-def siguiente_carta_panel(codigo, username):
+def siguiente_carta_panel(codigo, usuario):
+    exigir_profesor(usuario)
     partida = buscar_partida_panel(codigo, bloquear=True)
-    exigir_anfitrion_por_nombre(partida, username)
+    exigir_anfitrion(partida, usuario)
     if partida.status != "en_juego":
         raise ApiError(409, f"La partida no está en juego (estado: {partida.status}).")
     if partida.mode != "manual":
@@ -206,7 +221,8 @@ def siguiente_carta_panel(codigo, username):
     return datos
 
 
-def actualizar_ajustes_panel(codigo, username, cambios_crudos):
+def actualizar_ajustes_panel(codigo, usuario, cambios_crudos):
+    exigir_profesor(usuario)
     validos = {"mode": MODOS, "difficulty": DIFICULTADES_VALIDAS, "figure": FIGURAS}
     cambios = {
         campo: _validar_opcion(campo, cambios_crudos[campo], opciones)
@@ -217,7 +233,7 @@ def actualizar_ajustes_panel(codigo, username, cambios_crudos):
         raise ApiError(400, "Envía al menos uno de: mode, difficulty, figure.")
 
     partida = buscar_partida_panel(codigo, bloquear=True)
-    exigir_anfitrion_por_nombre(partida, username)
+    exigir_anfitrion(partida, usuario)
     if partida.status == "terminada":
         raise ApiError(409, "La partida ya terminó.")
 
@@ -231,13 +247,12 @@ def actualizar_ajustes_panel(codigo, username, cambios_crudos):
     return estado_panel(partida)
 
 
-def listar_partidas_profesor(username, limite=10):
-    if not username:
+def listar_partidas_profesor(usuario, limite=10):
+    if usuario is None:
         return []
     return db.session.scalars(
         select(Game)
-        .join(User, Game.host_id == User.id)
-        .where(User.username == username)
+        .where(Game.host_id == usuario.id)
         .order_by(Game.created_at.desc(), Game.id.desc())
         .limit(limite)
     ).all()

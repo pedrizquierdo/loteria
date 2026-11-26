@@ -5,9 +5,9 @@
 {% block content %}
 <section class="access-wrap">
   <div class="page-head">
-    <span class="eyebrow">Profesor · Control en vivo</span>
+    <span class="eyebrow">Profesor · {{ usuario.username }}</span>
     <h1>Abrir panel de partida</h1>
-    <p class="subtitle">Ingresa el código de la sala que creaste para iniciar, cantar cartas y ajustar reglas.</p>
+    <p class="subtitle">Ingresa el código de una sala tuya para iniciar, cantar cartas y ajustar reglas.</p>
   </div>
 
   <article class="card">
@@ -31,21 +31,6 @@
           spellcheck="false"
           required
           autofocus
-        >
-      </div>
-
-      <div class="field">
-        <label for="panel-user">Nombre del profesor anfitrión</label>
-        <input
-          id="panel-user"
-          name="username"
-          type="text"
-          class="input"
-          value="{{ valores.username }}"
-          placeholder="Ej. Prof. Luis"
-          maxlength="80"
-          autocomplete="username"
-          required
         >
       </div>
 
