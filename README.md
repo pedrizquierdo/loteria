@@ -71,6 +71,11 @@ Tablas:
 - `called_cards`: cartas cantadas en cada partida, en orden.
 - `winners`: ganadores de cada partida y la figura con que ganaron.
 
+## Salas y acceso rápido desde el celular
+
+- Las pantallas de `/salas/` permiten crear salas con código de 6 caracteres (`/salas/crear`) y unirse desde el celular (`/salas/unirse`).
+- **Limitación conocida (acceso rápido en salón):** si un alumno se une con un apodo nuevo (sin cuenta registrada en `/auth/registro`), entra directo con solo escribir su nombre para agilizar la dinámica en clase; si otro alumno escribe ese mismo apodo sin contraseña, podrá recuperar ese tablero. En cambio, si el nombre pertenece a una cuenta registrada con contraseña real (`/auth/registro`), `/salas/crear` y `/salas/unirse` exigen haber iniciado sesión previamente (`/auth/login`) para evitar suplantación.
+
 ## Estructura de carpetas
 
 ```
