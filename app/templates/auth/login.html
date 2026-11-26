@@ -1,0 +1,64 @@
+{% extends "auth/base.html" %}
+
+{% block title %}Iniciar sesión · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="auth-card-wrap">
+  <div class="page-head">
+    <span class="eyebrow">Acceso</span>
+    <h1>Iniciar sesión</h1>
+    <p class="subtitle">Entra con tu cuenta de profesor o jugador.</p>
+  </div>
+
+  <article class="card">
+    {% if error %}
+      <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="stack-form" method="post" action="{{ url_for('auth.login') }}">
+      {% if valores.next %}
+        <input type="hidden" name="next" value="{{ valores.next }}">
+      {% endif %}
+
+      <div class="field">
+        <label for="login-username">Nombre de usuario</label>
+        <input
+          id="login-username"
+          name="username"
+          type="text"
+          class="input"
+          value="{{ valores.username }}"
+          placeholder="Ej. profe_luis"
+          maxlength="80"
+          autocomplete="username"
+          required
+          autofocus
+        >
+      </div>
+
+      <div class="field">
+        <label for="login-password">Contraseña</label>
+        <input
+          id="login-password"
+          name="password"
+          type="password"
+          class="input"
+          placeholder="Tu contraseña"
+          maxlength="128"
+          autocomplete="current-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+
+    <p class="card-footnote">
+      ¿Aún no tienes cuenta?
+      <a href="{{ url_for('auth.registro', next=valores.next) if valores.next else url_for('auth.registro') }}">
+        Crear cuenta nueva
+      </a>
+    </p>
+  </article>
+</section>
+{% endblock %}

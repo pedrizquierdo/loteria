@@ -1,0 +1,34 @@
+{% extends "auth/base.html" %}
+
+{% block title %}Mi cuenta · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="auth-card-wrap">
+  <div class="page-head">
+    <span class="eyebrow">Sesión activa</span>
+    <h1>Hola, {{ usuario.username }}</h1>
+    <p class="subtitle">Tu sesión está activa y lista para usar la aplicación.</p>
+  </div>
+
+  <article class="card account-card">
+    <dl class="account-meta">
+      <div>
+        <dt>Usuario</dt>
+        <dd>{{ usuario.username }}</dd>
+      </div>
+      <div>
+        <dt>Rol</dt>
+        <dd>
+          <span class="role-badge role-{{ usuario.role }}">
+            {{ "Profesor" if usuario.role == "profesor" else "Jugador" }}
+          </span>
+        </dd>
+      </div>
+    </dl>
+
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <button type="submit" class="btn btn-outline btn-block">Cerrar sesión</button>
+    </form>
+  </article>
+</section>
+{% endblock %}
