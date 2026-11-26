@@ -17,11 +17,21 @@ from app.salas import ALFABETO_CODIGO, LARGO_CODIGO
 
 pytestmark = pytest.mark.usefixtures("limpia_bd")
 
-PROFE_HEADER = {"X-User-Id": "profe_api"}
-ANA_HEADER = {"X-User-Id": "ana"}
+PASSWORD_PRUEBA = "clave-salas-123"
 
 
 # ---------- utilidades ----------
+
+
+def registrar_y_entrar(app, username, role="jugador"):
+    """Crea un test_client autenticado por sesión real vía `/api/auth/register`."""
+    cli = app.test_client()
+    resp = cli.post(
+        "/api/auth/register",
+        json={"username": username, "password": PASSWORD_PRUEBA, "role": role},
+    )
+    assert resp.status_code == 201, resp.get_json()
+    return cli
 
 
 def extraer_codigo_de_redirect(resp):
@@ -449,11 +459,11 @@ def test_estado_sala_inexistente_da_404_json(client):
     assert "error" in resp.get_json()
 
 
-# ---------- interoperabilidad con API /api/games ----------
+# ---------- interoperabilidad con API /api/games (sesión real) ----------
 
 
 def test_sala_creada_en_web_es_compatible_con_api_games(app):
-    cliente_profe = app.test_client()
+    cliente_profe = registrar_y_entrar(app, "profe_web", role="profesor")
     codigo, _ = crear_sala_web(cliente_profe, username="profe_web", figure="diagonal")
 
     resp_estado = cliente_profe.get(f"/api/games/{codigo}/state")
@@ -463,31 +473,28 @@ def test_sala_creada_en_web_es_compatible_con_api_games(app):
     assert datos["figure"] == "diagonal"
     assert datos["status"] == "espera"
 
-    resp_start = cliente_profe.post(
-        f"/api/games/{codigo}/start", headers={"X-User-Id": "profe_web"}
-    )
+    resp_start = cliente_profe.post(f"/api/games/{codigo}/start")
     assert resp_start.status_code == 200
     assert resp_start.get_json()["status"] == "en_juego"
 
 
 def test_sala_creada_por_api_permite_unirse_desde_web_y_comparte_tablero(app):
-    api_client = app.test_client()
-    resp_crear = api_client.post(
+    cliente_profe = registrar_y_entrar(app, "profe_api", role="profesor")
+    resp_crear = cliente_profe.post(
         "/api/games",
-        headers=PROFE_HEADER,
         json={"figure": "fila", "difficulty": "normal", "mode": "manual"},
     )
     assert resp_crear.status_code == 201
     codigo = resp_crear.get_json()["code"]
 
-    # Alumno se une desde el celular (pantalla web).
-    cliente_ana = app.test_client()
+    # Alumna registrada con sesión real se une desde el celular (pantalla web).
+    cliente_ana = registrar_y_entrar(app, "ana", role="jugador")
     assert unirse_web(cliente_ana, codigo, username="ana").status_code == 302
 
     # La API refleja el jugador y devuelve exactamente el mismo tablero si vuelve a llamar /join.
-    assert api_client.get(f"/api/games/{codigo}/state").get_json()["players"] == 1
+    assert cliente_profe.get(f"/api/games/{codigo}/state").get_json()["players"] == 1
 
-    resp_join_api = api_client.post(f"/api/games/{codigo}/join", headers=ANA_HEADER)
+    resp_join_api = cliente_ana.post(f"/api/games/{codigo}/join")
     assert resp_join_api.status_code == 200  # ya tenía tablero
     with app.app_context():
         tablero = db.session.query(Board).one()
@@ -497,7 +504,29 @@ def test_sala_creada_por_api_permite_unirse_desde_web_y_comparte_tablero(app):
         ]
 
 
-# ---------- seguridad básica ----------
+# ---------- seguridad y cuentas registradas ----------
+
+
+def test_cuenta_con_contrasena_real_no_puede_suplantarse_en_salas(app):
+    cliente_profe = registrar_y_entrar(app, "profe_seguro", role="profesor")
+    cliente_ana = registrar_y_entrar(app, "ana_segura", role="jugador")
+
+    # Un visitante sin sesión no puede crear sala usando el nombre del profesor registrado.
+    intruso = app.test_client()
+    resp_crear = intruso.post("/salas/crear", data={"username": "profe_seguro"})
+    assert resp_crear.status_code == 401
+    assert "/auth/login" in resp_crear.get_data(as_text=True)
+
+    # El profesor autenticado sí puede crear la sala normalmente.
+    codigo, _ = crear_sala_web(cliente_profe, username="profe_seguro")
+
+    # Ana autenticada se une a la sala.
+    assert unirse_web(cliente_ana, codigo, username="ana_segura").status_code == 302
+
+    # Un intruso sin sesión no puede robar el tablero de Ana escribiendo su nombre.
+    resp_robar = unirse_web(app.test_client(), codigo, username="ana_segura")
+    assert resp_robar.status_code == 401
+    assert "/auth/login" in resp_robar.get_data(as_text=True)
 
 
 def test_nombre_con_html_se_escapa_en_vistas(app):
