@@ -1,0 +1,74 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Salas · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <span class="eyebrow">Juego tradicional en el salón</span>
+  <h1>Salas de Lotería Mexicana</h1>
+  <p class="hero-subtitle">
+    El profesor crea una sala con código y los alumnos se unen al instante desde su celular con un tablero único de 16 cartas.
+  </p>
+</section>
+
+<section class="role-grid" aria-label="Elegir rol">
+  <article class="card card-student">
+    <div class="card-badge card-badge-teal">Alumno · Celular</div>
+    <h2>Unirme a una sala</h2>
+    <p class="card-desc">
+      Ingresa el código que proyectó tu profesor y escribe tu nombre para recibir tu tablero.
+    </p>
+    <form class="stack-form" method="post" action="{{ url_for('salas.unirse') }}">
+      <div class="field">
+        <label for="inicio-codigo">Código de sala</label>
+        <input
+          id="inicio-codigo"
+          name="code"
+          type="text"
+          class="input input-code"
+          placeholder="EJ. K7M9P2"
+          maxlength="12"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          data-uppercase-code
+          required
+        >
+      </div>
+      <div class="field">
+        <label for="inicio-nombre">Tu nombre</label>
+        <input
+          id="inicio-nombre"
+          name="username"
+          type="text"
+          class="input"
+          placeholder="Ej. Ana López"
+          maxlength="80"
+          autocomplete="nickname"
+          required
+        >
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Entrar a la sala</button>
+    </form>
+    <p class="card-footnote">
+      ¿Tienes un enlace directo? <a href="{{ url_for('salas.unirse') }}">Abrir pantalla de unión</a>
+    </p>
+  </article>
+
+  <article class="card card-teacher">
+    <div class="card-badge card-badge-crimson">Profesor · Anfitrión</div>
+    <h2>Crear una sala</h2>
+    <p class="card-desc">
+      Configura la figura ganadora, el modo de canto y la velocidad. Se generará un código único de 6 caracteres fácil de dictar.
+    </p>
+    <ul class="feature-list">
+      <li>5 figuras ganadoras disponibles (fila, columna, diagonal, cuatro esquinas o tablero lleno).</li>
+      <li>Modo manual o automático con velocidad ajustable.</li>
+      <li>Lista en vivo de los alumnos que se van conectando desde su celular.</li>
+    </ul>
+    <a class="btn btn-secondary btn-block" href="{{ url_for('salas.crear') }}">
+      Crear nueva sala
+    </a>
+  </article>
+</section>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Crear sala · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="narrow-wrap">
+  <div class="page-head">
+    <span class="eyebrow">Profesor</span>
+    <h1>Crear nueva sala</h1>
+    <p class="page-subtitle">
+      Configura la partida y obtén un código de 6 caracteres para compartir con tus alumnos.
+    </p>
+  </div>
+
+  <div class="card">
+    {% if error %}
+      <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="stack-form" method="post" action="{{ url_for('salas.crear') }}">
+      <div class="field">
+        <label for="profesor-nombre">Nombre del profesor</label>
+        <input
+          id="profesor-nombre"
+          name="username"
+          type="text"
+          class="input"
+          value="{{ valores.username }}"
+          placeholder="Ej. Prof. Luis"
+          maxlength="80"
+          autocomplete="username"
+          required
+          autofocus
+        >
+        <span class="field-hint">Este nombre te identificará como anfitrión de la sala.</span>
+      </div>
+
+      <fieldset class="field fieldset">
+        <legend>Figura ganadora</legend>
+        <div class="option-grid">
+          {% for clave, etiqueta, descripcion in figuras %}
+            <label class="option-card">
+              <input
+                type="radio"
+                name="figure"
+                value="{{ clave }}"
+                {% if valores.figure == clave %}checked{% endif %}
+              >
+              <span class="option-body">
+                <span class="option-title">{{ etiqueta }}</span>
+                <span class="option-desc">{{ descripcion }}</span>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <div class="two-col">
+        <fieldset class="field fieldset">
+          <legend>Modo de canto</legend>
+          <div class="pill-group">
+            {% for clave, etiqueta in modos %}
+              <label class="pill-option">
+                <input
+                  type="radio"
+                  name="mode"
+                  value="{{ clave }}"
+                  {% if valores.mode == clave %}checked{% endif %}
+                >
+                <span>{{ etiqueta }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+
+        <fieldset class="field fieldset">
+          <legend>Velocidad (modo automático)</legend>
+          <div class="pill-group">
+            {% for clave, etiqueta in dificultades %}
+              <label class="pill-option">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  value="{{ clave }}"
+                  {% if valores.difficulty == clave %}checked{% endif %}
+                >
+                <span>{{ etiqueta }}</span>
+              </label>
+            {% endfor %}
+          </div>
+        </fieldset>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary btn-lg">Crear sala y generar código</button>
+        <a href="{{ url_for('salas.inicio') }}" class="btn btn-ghost">Volver al inicio</a>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}
