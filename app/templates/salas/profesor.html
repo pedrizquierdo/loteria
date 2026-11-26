@@ -1,0 +1,90 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Sala {{ sala.code }} · Profesor{% endblock %}
+
+{% block content %}
+<section
+  class="room-layout"
+  data-room-poll="{{ url_for('salas.estado_sala', code=sala.code) }}"
+  data-room-role="profesor"
+>
+  <article class="card code-hero-card">
+    <div class="code-hero-top">
+      <span class="eyebrow">Sala del profesor · {{ sala.host }}</span>
+      <span class="status-pill status-{{ sala.status }}" data-room-status>{{ sala.status_label }}</span>
+    </div>
+
+    <p class="code-caption">Comparte este código con tus alumnos para que se unan desde su celular</p>
+
+    <div class="room-code-display" id="codigo-sala" aria-label="Código de sala">{{ sala.code }}</div>
+
+    <div class="copy-actions">
+      <button type="button" class="btn btn-primary" data-copy-text="{{ sala.code }}">
+        Copiar código
+      </button>
+      <button type="button" class="btn btn-secondary" data-copy-text="{{ enlace_unirse }}">
+        Copiar enlace de invitación
+      </button>
+    </div>
+
+    <div class="invite-box">
+      <span class="invite-label">Enlace directo para celular:</span>
+      <a class="invite-url" href="{{ enlace_unirse }}">{{ enlace_unirse }}</a>
+    </div>
+  </article>
+
+  <div class="room-details-grid">
+    <article class="card">
+      <h2 class="section-title">Configuración de la partida</h2>
+      <dl class="meta-list">
+        <div class="meta-item">
+          <dt>Figura ganadora</dt>
+          <dd>
+            <strong data-room-figure>{{ sala.figure_label }}</strong>
+            <span class="meta-sub" data-room-figure-desc>{{ sala.figure_description }}</span>
+          </dd>
+        </div>
+        <div class="meta-item">
+          <dt>Modo de canto</dt>
+          <dd><strong data-room-mode>{{ sala.mode_label }}</strong></dd>
+        </div>
+        <div class="meta-item">
+          <dt>Velocidad</dt>
+          <dd><strong data-room-difficulty>{{ sala.difficulty_label }}</strong></dd>
+        </div>
+      </dl>
+    </article>
+
+    <article class="card players-card">
+      <div class="players-header">
+        <h2 class="section-title">
+          Alumnos conectados
+          <span class="count-badge" data-players-count>{{ sala.players_count }}</span>
+        </h2>
+        <span class="live-dot" title="Se actualiza automáticamente cada 2 segundos">En vivo</span>
+      </div>
+
+      <p
+        class="empty-state{% if sala.players %} is-hidden{% endif %}"
+        data-players-empty
+      >
+        Aún no se ha unido ningún alumno. En cuanto ingresen el código desde su celular aparecerán aquí.
+      </p>
+
+      <ul
+        class="players-list{% if not sala.players %} is-hidden{% endif %}"
+        data-players-list
+      >
+        {% for nombre in sala.players %}
+          <li class="player-chip">{{ nombre }}</li>
+        {% endfor %}
+      </ul>
+    </article>
+  </div>
+
+  <div class="room-footer-actions">
+    <a href="{{ url_for('salas.crear') }}" class="btn btn-ghost">Crear otra sala</a>
+    <a href="{{ url_for('salas.inicio') }}" class="text-link">Volver al inicio</a>
+  </div>
+</section>
+{% endblock %}

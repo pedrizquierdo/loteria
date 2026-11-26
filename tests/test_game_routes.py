@@ -17,34 +17,64 @@ from app.models import Board, BoardCard, CalledCard, Game, User, Winner
 pytestmark = pytest.mark.usefixtures("limpia_bd")
 
 FIGURAS = ("fila", "columna", "diagonal", "cuatro_esquinas", "tablero_lleno")
-PROFE = {"X-User-Id": "profe"}
-OTRO_PROFE = {"X-User-Id": "otro_profe"}
-ANA = {"X-User-Id": "ana"}
-BETO = {"X-User-Id": "beto"}
+PROFE = ("profe", "profesor")
+OTRO_PROFE = ("otro_profe", "profesor")
+ANA = ("ana", "jugador")
+BETO = ("beto", "jugador")
 CODIGO_INEXISTENTE = "NOEXIS"
+_PASSWORD_PRUEBA = "clave-prueba-123"
 
 
 # ---------- utilidades ----------
 
 
+def cliente_como(client, usuario):
+    """Devuelve un test_client autenticado por sesión real para `(username, role)`."""
+    if not usuario:
+        return client.application.test_client()
+    sesiones = getattr(client, "_sesiones", None)
+    if sesiones is None:
+        sesiones = {}
+        client._sesiones = sesiones
+    if usuario in sesiones:
+        return sesiones[usuario]
+
+    cli = client.application.test_client()
+    username, role = usuario
+    resp = cli.post(
+        "/api/auth/login",
+        json={"username": username, "password": _PASSWORD_PRUEBA},
+    )
+    if resp.status_code == 401:
+        resp = cli.post(
+            "/api/auth/register",
+            json={"username": username, "password": _PASSWORD_PRUEBA, "role": role},
+        )
+        assert resp.status_code == 201, resp.get_json()
+    else:
+        assert resp.status_code == 200, resp.get_json()
+    sesiones[usuario] = cli
+    return cli
+
+
 def crear_partida(client, **opciones):
-    resp = client.post("/api/games", headers=PROFE, json=opciones)
+    resp = cliente_como(client, PROFE).post("/api/games", json=opciones)
     assert resp.status_code == 201, resp.get_json()
     return resp.get_json()["code"]
 
 
 def partida_iniciada(client, **opciones):
     code = crear_partida(client, **opciones)
-    assert client.post(f"/api/games/{code}/start", headers=PROFE).status_code == 200
+    assert cliente_como(client, PROFE).post(f"/api/games/{code}/start").status_code == 200
     return code
 
 
-def unirse(client, code, headers=ANA):
-    return client.post(f"/api/games/{code}/join", headers=headers)
+def unirse(client, code, usuario=ANA):
+    return cliente_como(client, usuario).post(f"/api/games/{code}/join")
 
 
 def siguiente(client, code):
-    return client.post(f"/api/games/{code}/next-card", headers=PROFE)
+    return cliente_como(client, PROFE).post(f"/api/games/{code}/next-card")
 
 
 def estado(client, code):
@@ -53,12 +83,14 @@ def estado(client, code):
     return resp.get_json()
 
 
-def ajustes(client, code, headers=PROFE, **cambios):
-    return client.post(f"/api/games/{code}/settings", headers=headers, json=cambios)
+def ajustes(client, code, usuario=PROFE, **cambios):
+    return cliente_como(client, usuario).post(f"/api/games/{code}/settings", json=cambios)
 
 
-def reclamar(client, code, marcadas, headers=ANA):
-    return client.post(f"/api/games/{code}/claim", headers=headers, json={"marcadas": marcadas})
+def reclamar(client, code, marcadas, usuario=ANA):
+    return cliente_como(client, usuario).post(
+        f"/api/games/{code}/claim", json={"marcadas": marcadas}
+    )
 
 
 def ids_cantados(datos):
@@ -119,7 +151,7 @@ def ganadores(app, code):
 
 
 def test_crear_partida_valores_por_defecto(client):
-    resp = client.post("/api/games", headers=PROFE)
+    resp = cliente_como(client, PROFE).post("/api/games")
     assert resp.status_code == 201
     datos = resp.get_json()
     assert len(datos["code"]) == 6
@@ -151,9 +183,8 @@ def test_crear_partida_guarda_semilla_entera_y_anfitrion(app, client):
 
 
 def test_crear_partida_con_opciones(client):
-    resp = client.post(
+    resp = cliente_como(client, PROFE).post(
         "/api/games",
-        headers=PROFE,
         json={"figure": "cuatro_esquinas", "difficulty": "dificil", "mode": "auto"},
     )
     datos = resp.get_json()
@@ -178,37 +209,45 @@ def test_crear_partida_con_opciones(client):
     ],
 )
 def test_crear_partida_rechaza_datos_invalidos(app, client, cuerpo):
-    resp = client.post("/api/games", headers=PROFE, json=cuerpo)
+    resp = cliente_como(client, PROFE).post("/api/games", json=cuerpo)
     assert resp.status_code == 400
     assert "error" in resp.get_json()
     with app.app_context():
         assert db.session.query(Game).count() == 0
 
 
-# ---------- autenticación temporal (X-User-Id) ----------
+# ---------- autenticación por sesión ----------
 
 
 @pytest.mark.parametrize(
     "ruta", ["", "/{code}/start", "/{code}/next-card", "/{code}/settings"]
 )
-def test_rutas_de_profesor_sin_encabezado_dan_401(client, ruta):
+def test_rutas_de_profesor_sin_sesion_dan_401(client, ruta):
     code = crear_partida(client)
     resp = client.post("/api/games" + ruta.format(code=code), json={"mode": "auto"})
     assert resp.status_code == 401
-    assert "X-User-Id" in resp.get_json()["error"]
+    assert "sesión" in resp.get_json()["error"].lower()
 
 
 @pytest.mark.parametrize("ruta", ["/{code}/join", "/{code}/claim"])
-def test_rutas_de_jugador_sin_encabezado_dan_401(client, ruta):
+def test_rutas_de_jugador_sin_sesion_dan_401(client, ruta):
     code = partida_iniciada(client)
     resp = client.post("/api/games" + ruta.format(code=code), json={"marcadas": []})
     assert resp.status_code == 401
 
 
+def test_header_x_user_id_sin_sesion_es_rechazado(client):
+    code = crear_partida(client)
+    resp = client.post("/api/games", headers={"X-User-Id": "profe"})
+    assert resp.status_code == 401
+    resp_join = client.post(f"/api/games/{code}/join", headers={"X-User-Id": "ana"})
+    assert resp_join.status_code == 401
+
+
 def test_jugador_no_puede_crear_partida(client):
     code = crear_partida(client)
-    unirse(client, code, ANA)  # "ana" queda registrada como jugador
-    resp = client.post("/api/games", headers=ANA)
+    unirse(client, code, ANA)
+    resp = cliente_como(client, ANA).post("/api/games")
     assert resp.status_code == 403
 
 
@@ -218,35 +257,31 @@ def test_solo_el_anfitrion_controla_la_partida(client, quien, ruta):
     code = crear_partida(client)
     unirse(client, code, ANA)
     if ruta == "next-card":
-        client.post(f"/api/games/{code}/start", headers=PROFE)
-    resp = client.post(f"/api/games/{code}/{ruta}", headers=quien, json={"mode": "auto"})
+        cliente_como(client, PROFE).post(f"/api/games/{code}/start")
+    resp = cliente_como(client, quien).post(
+        f"/api/games/{code}/{ruta}", json={"mode": "auto"}
+    )
     assert resp.status_code == 403
-
-
-def test_usuario_nuevo_en_join_se_crea_como_jugador(app, client):
-    code = crear_partida(client)
-    unirse(client, code, {"X-User-Id": "nuevo"})
-    with app.app_context():
-        assert db.session.query(User).filter_by(username="nuevo").one().role == "jugador"
 
 
 # ---------- 404 ----------
 
 
 @pytest.mark.parametrize(
-    "metodo, ruta, headers, cuerpo",
+    "metodo, ruta, usuario, cuerpo",
     [
         ("post", "join", ANA, None),
         ("post", "start", PROFE, None),
         ("post", "next-card", PROFE, None),
         ("post", "settings", PROFE, {"mode": "auto"}),
-        ("get", "state", {}, None),
+        ("get", "state", None, None),
         ("post", "claim", ANA, {"marcadas": []}),
     ],
 )
-def test_codigo_inexistente_da_404(client, metodo, ruta, headers, cuerpo):
-    llamar = getattr(client, metodo)
-    resp = llamar(f"/api/games/{CODIGO_INEXISTENTE}/{ruta}", headers=headers, json=cuerpo)
+def test_codigo_inexistente_da_404(client, metodo, ruta, usuario, cuerpo):
+    cli = cliente_como(client, usuario)
+    llamar = getattr(cli, metodo)
+    resp = llamar(f"/api/games/{CODIGO_INEXISTENTE}/{ruta}", json=cuerpo)
     assert resp.status_code == 404
     assert "error" in resp.get_json()
 
@@ -311,7 +346,7 @@ def test_join_se_permite_con_la_partida_en_juego(client):
 
 def test_start_pone_la_partida_en_juego(app, client):
     code = crear_partida(client)
-    resp = client.post(f"/api/games/{code}/start", headers=PROFE)
+    resp = cliente_como(client, PROFE).post(f"/api/games/{code}/start")
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "en_juego"
     with app.app_context():
@@ -322,7 +357,7 @@ def test_start_pone_la_partida_en_juego(app, client):
 
 def test_start_dos_veces_da_409(client):
     code = partida_iniciada(client)
-    assert client.post(f"/api/games/{code}/start", headers=PROFE).status_code == 409
+    assert cliente_como(client, PROFE).post(f"/api/games/{code}/start").status_code == 409
 
 
 def test_next_card_antes_de_iniciar_da_409(client):
@@ -581,7 +616,7 @@ def test_claim_con_cartas_de_otro_tablero_es_invalido(app, client):
     if set(fila_ana) <= set(primera_fila(app, code, "beto")):
         pytest.skip("tableros con la misma primera fila (casi imposible)")
 
-    assert reclamar(client, code, fila_ana, headers=BETO).get_json() == {"valid": False}
+    assert reclamar(client, code, fila_ana, usuario=BETO).get_json() == {"valid": False}
     assert ganadores(app, code) == 0
 
 
@@ -605,7 +640,7 @@ def test_claim_con_marcadas_invalidas_da_400(client, marcadas):
 
 def test_claim_sin_tablero_da_404(client):
     code = partida_iniciada(client)
-    assert reclamar(client, code, [], headers={"X-User-Id": "intruso"}).status_code == 404
+    assert reclamar(client, code, [], usuario=("intruso", "jugador")).status_code == 404
 
 
 def test_claim_antes_de_iniciar_da_409(client):
@@ -626,8 +661,8 @@ def _partida_ganada_por_ana(app, client):
 
 def test_claim_en_partida_terminada_da_409(app, client):
     code, fila = _partida_ganada_por_ana(app, client)
-    assert reclamar(client, code, [], headers=BETO).status_code == 409
-    assert reclamar(client, code, fila, headers=ANA).status_code == 409
+    assert reclamar(client, code, [], usuario=BETO).status_code == 409
+    assert reclamar(client, code, fila, usuario=ANA).status_code == 409
     assert ganadores(app, code) == 1
 
 
@@ -640,7 +675,7 @@ def test_partida_terminada_rechaza_next_card_y_settings(app, client):
 def test_join_en_partida_terminada_solo_para_quien_ya_tenia_tablero(app, client):
     code, _ = _partida_ganada_por_ana(app, client)
     assert unirse(client, code, ANA).status_code == 200
-    assert unirse(client, code, {"X-User-Id": "tarde"}).status_code == 409
+    assert unirse(client, code, ("tarde", "jugador")).status_code == 409
 
 
 def test_claim_en_auto_pone_al_dia_las_cartas_antes_de_validar(app, client):

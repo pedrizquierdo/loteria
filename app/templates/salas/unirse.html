@@ -1,0 +1,81 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Unirse a sala · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="mobile-wrap">
+  <div class="page-head page-head-center">
+    <span class="eyebrow">Alumno</span>
+    <h1>Unirse a una sala</h1>
+    <p class="page-subtitle">
+      Escribe el código que compartió tu profesor y tu nombre para recibir tu tablero.
+    </p>
+  </div>
+
+  <div class="card">
+    {% if sala_preview %}
+      <div class="alert alert-info" role="status">
+        <strong>Sala {{ sala_preview.code }}</strong> · Figura: {{ sala_preview.figure_label }} ·
+        {{ sala_preview.status_label }} ({{ sala_preview.players_count }} conectados)
+      </div>
+    {% endif %}
+
+    {% if error %}
+      <div class="alert alert-error" role="alert">
+        {{ error }}
+        {% if requiere_login %}
+          <a href="{{ url_for('auth.login', next=url_for('salas.unirse', code=valores.code) if valores.code else url_for('salas.unirse')) }}">Iniciar sesión</a>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    <form class="stack-form" method="post" action="{{ url_for('salas.unirse') }}">
+      <div class="field">
+        <label for="unirse-codigo">Código de sala</label>
+        <input
+          id="unirse-codigo"
+          name="code"
+          type="text"
+          class="input input-code input-code-lg"
+          value="{{ valores.code }}"
+          placeholder="ABC234"
+          maxlength="12"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          data-uppercase-code
+          required
+          {% if not valores.code %}autofocus{% endif %}
+        >
+        <span class="field-hint">No distingue entre mayúsculas y minúsculas.</span>
+      </div>
+
+      <div class="field">
+        <label for="unirse-nombre">Tu nombre o apodo</label>
+        <input
+          id="unirse-nombre"
+          name="username"
+          type="text"
+          class="input"
+          value="{{ valores.username }}"
+          placeholder="Ej. María Pérez"
+          maxlength="80"
+          autocomplete="nickname"
+          required
+          {% if valores.code %}autofocus{% endif %}
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Entrar a la sala</button>
+    </form>
+
+    <p class="card-footnote">
+      Si recargas el navegador o vuelves a entrar con el mismo nombre y código, recuperarás tu mismo tablero.
+    </p>
+  </div>
+
+  <div class="back-row">
+    <a href="{{ url_for('salas.inicio') }}" class="text-link">← Volver al inicio</a>
+  </div>
+</section>
+{% endblock %}

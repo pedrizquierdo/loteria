@@ -1,0 +1,65 @@
+{% extends "salas/base.html" %}
+
+{% block title %}Sala {{ sala.code }} · Tu tablero{% endblock %}
+
+{% block content %}
+<section
+  class="player-layout"
+  data-room-poll="{{ url_for('salas.estado_sala', code=sala.code) }}"
+  data-room-role="jugador"
+>
+  <article class="card player-header-card">
+    <div class="player-header-top">
+      <div>
+        <span class="eyebrow">Sala {{ sala.code }}</span>
+        <h1 class="player-title">{{ jugador }}</h1>
+      </div>
+      <span class="status-pill status-{{ sala.status }}" data-room-status>{{ sala.status_label }}</span>
+    </div>
+
+    <div class="player-meta-row">
+      <span class="meta-chip">Figura: <strong data-room-figure>{{ sala.figure_label }}</strong></span>
+      <span class="meta-chip">
+        Jugadores: <strong data-players-count>{{ sala.players_count }}</strong>
+      </span>
+      <span class="meta-chip">Anfitrión: <strong>{{ sala.host }}</strong></span>
+    </div>
+
+    <div class="status-banner status-banner-{{ sala.status }}" role="status" data-player-status-banner>
+      {% if sala.status == "espera" %}
+        Ya estás dentro de la sala. Esperando a que el profesor inicie la partida…
+      {% elif sala.status == "en_juego" %}
+        ¡La partida está en juego! Presta atención a las cartas que cante tu profesor.
+      {% else %}
+        Esta partida ya terminó. Aquí puedes consultar tu tablero asignado.
+      {% endif %}
+    </div>
+  </article>
+
+  <article class="card board-card">
+    <div class="board-head">
+      <h2 class="section-title">Tu tablero (4×4)</h2>
+      <p class="board-hint" data-room-figure-desc>{{ sala.figure_description }}</p>
+    </div>
+
+    <div class="loteria-board" role="grid" aria-label="Tablero de 16 cartas de Lotería">
+      {% for casilla in tablero.cards %}
+        <div
+          class="loteria-tile{% if casilla.marked %} is-marked{% endif %}"
+          role="gridcell"
+          data-card-id="{{ casilla.card.id }}"
+          data-position="{{ casilla.position }}"
+        >
+          <span class="tile-number">{{ casilla.card.id }}</span>
+          <span class="tile-name">{{ casilla.card.name }}</span>
+        </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  <div class="room-footer-actions">
+    <a href="{{ url_for('salas.unirse') }}" class="btn btn-ghost">Entrar a otra sala</a>
+    <a href="{{ url_for('salas.inicio') }}" class="text-link">Volver al inicio</a>
+  </div>
+</section>
+{% endblock %}
