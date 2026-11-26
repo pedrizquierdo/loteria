@@ -1,0 +1,73 @@
+{% extends "panel/base.html" %}
+
+{% block title %}Abrir panel · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="access-wrap">
+  <div class="page-head">
+    <span class="eyebrow">Profesor · Control en vivo</span>
+    <h1>Abrir panel de partida</h1>
+    <p class="subtitle">Ingresa el código de la sala que creaste para iniciar, cantar cartas y ajustar reglas.</p>
+  </div>
+
+  <article class="card">
+    {% if error %}
+      <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="stack-form" method="post" action="{{ url_for('panel.acceder') }}">
+      <div class="field">
+        <label for="panel-code">Código de la partida</label>
+        <input
+          id="panel-code"
+          name="code"
+          type="text"
+          class="input input-code"
+          value="{{ valores.code }}"
+          placeholder="EJ. K7M9P2"
+          maxlength="12"
+          autocomplete="off"
+          autocapitalize="characters"
+          spellcheck="false"
+          required
+          autofocus
+        >
+      </div>
+
+      <div class="field">
+        <label for="panel-user">Nombre del profesor anfitrión</label>
+        <input
+          id="panel-user"
+          name="username"
+          type="text"
+          class="input"
+          value="{{ valores.username }}"
+          placeholder="Ej. Prof. Luis"
+          maxlength="80"
+          autocomplete="username"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">Abrir panel de control</button>
+    </form>
+  </article>
+
+  {% if partidas %}
+    <article class="card recent-card">
+      <h2 class="section-title">Tus partidas recientes</h2>
+      <ul class="recent-list">
+        {% for partida in partidas %}
+          <li class="recent-item">
+            <div>
+              <strong class="recent-code">{{ partida.code }}</strong>
+              <span class="status-pill status-{{ partida.status }}">{{ partida.status }}</span>
+            </div>
+            <a class="btn btn-ghost btn-sm" href="{{ url_for('panel.control', code=partida.code) }}">Abrir</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </article>
+  {% endif %}
+</section>
+{% endblock %}
