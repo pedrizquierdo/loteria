@@ -1,0 +1,104 @@
+{% extends "auth/base.html" %}
+
+{% block title %}Crear cuenta · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="auth-card-wrap">
+  <div class="page-head">
+    <span class="eyebrow">Registro</span>
+    <h1>Crear cuenta</h1>
+    <p class="subtitle">Elige tu rol para crear salas como profesor o jugar desde tu celular.</p>
+  </div>
+
+  <article class="card">
+    {% if error %}
+      <div class="alert alert-error" role="alert">{{ error }}</div>
+    {% endif %}
+
+    <form class="stack-form" method="post" action="{{ url_for('auth.registro') }}">
+      {% if valores.next %}
+        <input type="hidden" name="next" value="{{ valores.next }}">
+      {% endif %}
+
+      <div class="field">
+        <label for="reg-username">Nombre de usuario</label>
+        <input
+          id="reg-username"
+          name="username"
+          type="text"
+          class="input"
+          value="{{ valores.username }}"
+          placeholder="Ej. ana_lopez"
+          maxlength="80"
+          autocomplete="username"
+          required
+          autofocus
+        >
+      </div>
+
+      <fieldset class="field fieldset">
+        <legend>Rol</legend>
+        <div class="role-pills">
+          <label class="role-pill">
+            <input
+              type="radio"
+              name="role"
+              value="jugador"
+              {% if valores.role == "jugador" %}checked{% endif %}
+            >
+            <span>Jugador (Alumno)</span>
+          </label>
+          <label class="role-pill">
+            <input
+              type="radio"
+              name="role"
+              value="profesor"
+              {% if valores.role == "profesor" %}checked{% endif %}
+            >
+            <span>Profesor (Anfitrión)</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="field">
+        <label for="reg-password">Contraseña</label>
+        <input
+          id="reg-password"
+          name="password"
+          type="password"
+          class="input"
+          placeholder="Mínimo 6 caracteres"
+          minlength="6"
+          maxlength="128"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <div class="field">
+        <label for="reg-confirm">Confirmar contraseña</label>
+        <input
+          id="reg-confirm"
+          name="confirm_password"
+          type="password"
+          class="input"
+          placeholder="Repite tu contraseña"
+          minlength="6"
+          maxlength="128"
+          autocomplete="new-password"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-secondary btn-block">Registrarse</button>
+    </form>
+
+    <p class="card-footnote">
+      ¿Ya tienes cuenta?
+      <a href="{{ url_for('auth.login', next=valores.next) if valores.next else url_for('auth.login') }}">
+        Iniciar sesión
+      </a>
+    </p>
+  </article>
+</section>
+{% endblock %}
