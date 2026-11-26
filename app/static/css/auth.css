@@ -1,0 +1,357 @@
+:root {
+  --bg: #fdf8f1;
+  --surface: #ffffff;
+  --ink: #1f1b18;
+  --ink-muted: #5d534a;
+  --border: #e8dccb;
+  --crimson: #c6362b;
+  --crimson-dark: #a2271e;
+  --teal: #0e7c7b;
+  --teal-dark: #095d5c;
+  --gold: #e5a00d;
+  --error-bg: #fef0ef;
+  --error-border: #f3b5b0;
+  --error-ink: #8e1e16;
+  --info-bg: #ebf7f7;
+  --shadow: 0 10px 28px rgba(45, 29, 14, 0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.papel-picado {
+  height: 7px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--crimson) 0 42px,
+    var(--gold) 42px 84px,
+    var(--teal) 84px 126px,
+    #2d4a8a 126px 168px
+  );
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.auth-header {
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  gap: 0.75rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--crimson);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.auth-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-link {
+  text-decoration: none;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.nav-link-accent {
+  background: var(--teal);
+  color: #fff;
+}
+
+.auth-main {
+  flex: 1;
+  padding: 2rem 1rem 2.5rem;
+}
+
+.auth-footer {
+  border-top: 1px solid var(--border);
+  padding: 1rem 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+
+.auth-footer p {
+  margin: 0;
+}
+
+.auth-card-wrap {
+  max-width: 440px;
+  margin: 0 auto;
+}
+
+.page-head {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--crimson);
+  margin-bottom: 0.3rem;
+}
+
+.page-head h1 {
+  margin: 0 0 0.4rem;
+  font-size: 1.85rem;
+  line-height: 1.18;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 0.95rem;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--crimson);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.stack-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field label,
+.fieldset legend {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.fieldset legend {
+  margin-bottom: 0.45rem;
+}
+
+.input {
+  width: 100%;
+  min-height: 46px;
+  padding: 0.65rem 0.9rem;
+  font-size: 1rem;
+  font-family: inherit;
+  border: 1.5px solid #d7c7b2;
+  border-radius: var(--radius-sm);
+  background: #fffdf9;
+  color: var(--ink);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(14, 124, 123, 0.16);
+  background: #fff;
+}
+
+.role-pills {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.role-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fffdf9;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.role-pill:has(input:checked) {
+  border-color: var(--teal);
+  background: var(--info-bg);
+  color: var(--teal-dark);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0.65rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  font-family: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn-primary {
+  background: var(--crimson);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--crimson-dark);
+}
+
+.btn-secondary {
+  background: var(--teal);
+  color: #fff;
+}
+
+.btn-secondary:hover {
+  background: var(--teal-dark);
+}
+
+.btn-outline {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+.btn-outline:hover {
+  background: #faf4ea;
+}
+
+.alert {
+  padding: 0.8rem 0.95rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.alert-error {
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  color: var(--error-ink);
+}
+
+.card-footnote {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--ink-muted);
+}
+
+.card-footnote a {
+  color: var(--teal-dark);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.account-meta {
+  margin: 0 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.account-meta > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #f0e6d8;
+}
+
+.account-meta dt {
+  color: var(--ink-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.account-meta dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.role-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.role-profesor {
+  background: var(--error-bg);
+  color: var(--crimson-dark);
+}
+
+.role-jugador {
+  background: var(--info-bg);
+  color: var(--teal-dark);
+}
