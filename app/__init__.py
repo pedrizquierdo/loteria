@@ -21,6 +21,7 @@ def create_app(config_class=Config):
     from app.routes.game import bp as game_bp
     from app.routes.health import bp as health_bp
     from app.routes.main import bp as main_bp
+    from app.routes.panel import bp as panel_bp
     from app.routes.ranking import bp as ranking_bp
     from app.routes.salas import bp as salas_bp
 
@@ -29,6 +30,7 @@ def create_app(config_class=Config):
     app.register_blueprint(auth_bp)
     app.register_blueprint(game_bp)
     app.register_blueprint(salas_bp)
+    app.register_blueprint(panel_bp)
     app.register_blueprint(ranking_bp)
 
     return app
