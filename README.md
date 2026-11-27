@@ -71,9 +71,10 @@ Tablas:
 - `called_cards`: cartas cantadas en cada partida, en orden.
 - `winners`: ganadores de cada partida y la figura con que ganaron.
 
-## Salas y acceso rápido desde el celular
+## Salas, panel del profesor y acceso rápido desde el celular
 
 - Las pantallas de `/salas/` permiten crear salas con código de 6 caracteres (`/salas/crear`) y unirse desde el celular (`/salas/unirse`).
+- **Panel del profesor (`/panel/` y `/panel/<code>`):** para usar el panel de control en vivo, el profesor debe registrarse primero en `/auth/registro` (con rol `profesor`) e iniciar sesión en `/auth/login`. Todas las rutas de `/panel/*` exigen sesión real y verifican que la partida pertenezca al profesor autenticado (`host_id`).
 - **Limitación conocida (acceso rápido en salón):** si un alumno se une con un apodo nuevo (sin cuenta registrada en `/auth/registro`), entra directo con solo escribir su nombre para agilizar la dinámica en clase; si otro alumno escribe ese mismo apodo sin contraseña, podrá recuperar ese tablero. En cambio, si el nombre pertenece a una cuenta registrada con contraseña real (`/auth/registro`), `/salas/crear` y `/salas/unirse` exigen haber iniciado sesión previamente (`/auth/login`) para evitar suplantación.
 
 ## Estructura de carpetas
