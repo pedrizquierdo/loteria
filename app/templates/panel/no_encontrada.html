@@ -1,0 +1,16 @@
+{% extends "panel/base.html" %}
+
+{% block title %}{{ titulo }} · Panel del profesor{% endblock %}
+
+{% block content %}
+<section class="access-wrap">
+  <article class="card center-card">
+    <span class="eyebrow">Panel del profesor</span>
+    <h1>{{ titulo }}</h1>
+    <p class="subtitle">{{ error }}</p>
+    <div class="spacer">
+      <a href="{{ url_for('panel.acceso') }}" class="btn btn-primary btn-block">Volver al acceso del panel</a>
+    </div>
+  </article>
+</section>
+{% endblock %}
