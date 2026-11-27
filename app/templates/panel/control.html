@@ -1,0 +1,217 @@
+{% extends "panel/base.html" %}
+
+{% block title %}Panel {{ panel.code }} · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section
+  class="console-layout"
+  data-panel-code="{{ panel.code }}"
+  data-panel-state-url="{{ url_for('panel.estado', code=panel.code) }}"
+>
+  <header class="card console-topbar">
+    <div class="topbar-left">
+      <span class="eyebrow">Anfitrión: {{ panel.host }}</span>
+      <div class="code-row">
+        <h1 class="console-code">{{ panel.code }}</h1>
+        <span class="status-pill status-{{ panel.status }}" data-panel-status>{{ panel.status_label }}</span>
+      </div>
+    </div>
+    <div class="topbar-stats">
+      <div class="stat-box">
+        <span class="stat-label">Jugadores</span>
+        <strong class="stat-value" data-panel-players-count>{{ panel.players_count }}</strong>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Cantadas</span>
+        <strong class="stat-value" data-panel-called-count>{{ panel.called_count }} / 54</strong>
+      </div>
+      <div class="stat-box">
+        <span class="stat-label">Restantes</span>
+        <strong class="stat-value" data-panel-remaining>{{ panel.remaining }}</strong>
+      </div>
+    </div>
+  </header>
+
+  <div
+    class="alert alert-error{% if not error %} is-hidden{% endif %}"
+    role="alert"
+    data-panel-error
+  >
+    {{ error or "" }}
+  </div>
+
+  <div
+    class="winner-banner{% if not panel.winner %} is-hidden{% endif %}"
+    role="status"
+    data-panel-winner-banner
+  >
+    <span class="winner-label">¡Lotería! Ganador confirmado</span>
+    <strong class="winner-name" data-panel-winner-name>
+      {% if panel.winner %}{{ panel.winner.username }}{% endif %}
+    </strong>
+    <span class="winner-figure" data-panel-winner-figure>
+      {% if panel.winner %}Figura: {{ panel.winner.figure_label }}{% endif %}
+    </span>
+  </div>
+
+  <div class="console-grid">
+    <article class="card spotlight-card">
+      <div class="spotlight-head">
+        <h2 class="section-title">Carta actual</h2>
+        <span class="mode-tag" data-panel-mode-tag>
+          {{ panel.mode_label }} · {{ panel.difficulty_label }}
+        </span>
+      </div>
+
+      <div class="current-card-stage" data-panel-current-stage>
+        {% if panel.current_card %}
+          <span class="stage-order" data-panel-card-order>Carta #{{ panel.current_card.order }}</span>
+          <div class="stage-number" data-panel-card-id>{{ panel.current_card.id }}</div>
+          <div class="stage-name" data-panel-card-name>{{ panel.current_card.name }}</div>
+        {% else %}
+          <span class="stage-order" data-panel-card-order>Listo para cantar</span>
+          <div class="stage-number" data-panel-card-id>—</div>
+          <div class="stage-name" data-panel-card-name>Aún no se canta ninguna carta</div>
+        {% endif %}
+      </div>
+
+      <div class="primary-actions">
+        <form
+          method="post"
+          action="{{ url_for('panel.iniciar', code=panel.code) }}"
+          data-panel-action="start"
+          class="{% if panel.status != 'espera' %}is-hidden{% endif %}"
+        >
+          <button type="submit" class="btn btn-secondary btn-lg btn-block">
+            Iniciar partida
+          </button>
+        </form>
+
+        <form
+          method="post"
+          action="{{ url_for('panel.siguiente_carta', code=panel.code) }}"
+          data-panel-action="next-card"
+          class="{% if panel.status != 'en_juego' or panel.mode != 'manual' %}is-hidden{% endif %}"
+        >
+          <button
+            type="submit"
+            class="btn btn-primary btn-lg btn-block"
+            {% if panel.remaining == 0 %}disabled{% endif %}
+            data-panel-next-btn
+          >
+            Sacar siguiente carta
+          </button>
+        </form>
+
+        <p
+          class="auto-notice{% if panel.status != 'en_juego' or panel.mode != 'auto' %} is-hidden{% endif %}"
+          data-panel-auto-notice
+        >
+          Modo automático activo: las cartas salen cada {{ panel.interval_seconds }} segundos.
+        </p>
+      </div>
+    </article>
+
+    <div class="side-column">
+      <article class="card">
+        <h2 class="section-title">Ajustes en vivo</h2>
+        <form
+          class="stack-form"
+          method="post"
+          action="{{ url_for('panel.ajustes', code=panel.code) }}"
+          data-panel-settings-form
+        >
+          <div class="field">
+            <label for="cfg-figure">Figura ganadora</label>
+            <select
+              id="cfg-figure"
+              name="figure"
+              class="input"
+              {% if panel.status == "terminada" %}disabled{% endif %}
+            >
+              {% for clave, etiqueta in figuras %}
+                <option value="{{ clave }}" {% if panel.figure == clave %}selected{% endif %}>
+                  {{ etiqueta }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="cfg-mode">Modo de canto</label>
+              <select
+                id="cfg-mode"
+                name="mode"
+                class="input"
+                {% if panel.status == "terminada" %}disabled{% endif %}
+              >
+                {% for clave, etiqueta in modos %}
+                  <option value="{{ clave }}" {% if panel.mode == clave %}selected{% endif %}>
+                    {{ etiqueta }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="cfg-difficulty">Velocidad</label>
+              <select
+                id="cfg-difficulty"
+                name="difficulty"
+                class="input"
+                {% if panel.status == "terminada" %}disabled{% endif %}
+              >
+                {% for clave, etiqueta in dificultades %}
+                  <option value="{{ clave }}" {% if panel.difficulty == clave %}selected{% endif %}>
+                    {{ etiqueta }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-outline btn-block"
+            {% if panel.status == "terminada" %}disabled{% endif %}
+            data-panel-settings-btn
+          >
+            Guardar ajustes
+          </button>
+        </form>
+      </article>
+
+      <article class="card">
+        <h2 class="section-title">
+          Jugadores conectados (<span data-panel-players-inline>{{ panel.players_count }}</span>)
+        </h2>
+        <p class="empty-note{% if panel.players %} is-hidden{% endif %}" data-panel-players-empty>
+          Aún no se conecta ningún alumno.
+        </p>
+        <ul class="chip-list{% if not panel.players %} is-hidden{% endif %}" data-panel-players-list>
+          {% for nombre in panel.players %}
+            <li class="chip">{{ nombre }}</li>
+          {% endfor %}
+        </ul>
+      </article>
+    </div>
+  </div>
+
+  <article class="card">
+    <h2 class="section-title">Historial de cartas cantadas</h2>
+    <p class="empty-note{% if panel.called_cards %} is-hidden{% endif %}" data-panel-history-empty>
+      Aquí aparecerán las cartas conforme se vayan cantando.
+    </p>
+    <ol class="history-grid{% if not panel.called_cards %} is-hidden{% endif %}" data-panel-history-list>
+      {% for carta in panel.called_cards|reverse %}
+        <li class="history-item">
+          <span class="history-order">#{{ carta.order }}</span>
+          <strong>{{ carta.name }}</strong>
+          <span class="history-id">({{ carta.id }})</span>
+        </li>
+      {% endfor %}
+    </ol>
+  </article>
+</section>
+{% endblock %}
