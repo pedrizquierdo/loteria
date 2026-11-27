@@ -1,0 +1,97 @@
+{% extends "ranking/base.html" %}
+
+{% block title %}Ranking de ganadores · Lotería Mexicana en línea{% endblock %}
+
+{% block content %}
+<section class="ranking-hero">
+  <span class="eyebrow">Tabla de posiciones</span>
+  <h1>Ranking de ganadores</h1>
+  <p class="subtitle">
+    Jugadores con más partidas ganadas · {{ datos.total_wins }} victoria(s) registradas entre {{ datos.total_players }} ganador(es).
+  </p>
+</section>
+
+<nav class="filter-bar" aria-label="Filtrar por figura">
+  <a
+    href="{{ url_for('ranking.vista_ranking') }}"
+    class="filter-pill{% if not datos.figure %} is-active{% endif %}"
+  >Todas</a>
+  {% for clave, etiqueta in figuras %}
+    <a
+      href="{{ url_for('ranking.vista_ranking', figure=clave) }}"
+      class="filter-pill{% if datos.figure == clave %} is-active{% endif %}"
+    >{{ etiqueta }}</a>
+  {% endfor %}
+</nav>
+
+{% if error %}
+  <div class="alert alert-error" role="alert">{{ error }}</div>
+{% endif %}
+
+{% if datos.ranking %}
+  <section class="podium-grid" aria-label="Podio">
+    {% for item in datos.ranking[:3] %}
+      <article class="podium-card podium-{{ item.position }}">
+        <span class="podium-rank">#{{ item.position }}</span>
+        <h2 class="podium-name">{{ item.username }}</h2>
+        <p class="podium-wins">
+          <strong>{{ item.wins }}</strong>
+          {{ "victoria" if item.wins == 1 else "victorias" }}
+        </p>
+      </article>
+    {% endfor %}
+  </section>
+
+  <div class="ranking-grid">
+    <article class="card">
+      <h2 class="section-title">Clasificación ({{ datos.figure_label }})</h2>
+      <div class="table-wrap">
+        <table class="ranking-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Jugador</th>
+              <th class="num">Victorias</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in datos.ranking %}
+              <tr>
+                <td class="pos-cell">{{ item.position }}</td>
+                <td class="user-cell">{{ item.username }}</td>
+                <td class="num"><strong>{{ item.wins }}</strong></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </article>
+
+    <article class="card">
+      <h2 class="section-title">Victorias recientes</h2>
+      <ul class="recent-list">
+        {% for vic in datos.recent_wins %}
+          <li class="recent-item">
+            <div>
+              <strong>{{ vic.username }}</strong>
+              <span class="recent-meta">Sala {{ vic.game_code }}</span>
+            </div>
+            <span class="figure-badge">{{ vic.figure_label }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </article>
+  </div>
+{% else %}
+  <article class="card empty-card">
+    <h2>Aún no hay ganadores registrados</h2>
+    <p class="subtitle">
+      {% if datos.figure %}
+        Todavía nadie ha ganado una partida con la figura <strong>{{ datos.figure_label }}</strong>.
+      {% else %}
+        Cuando alguien cante ¡Lotería! en una partida aparecerá aquí en el ranking.
+      {% endif %}
+    </p>
+  </article>
+{% endif %}
+{% endblock %}
